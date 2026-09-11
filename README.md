@@ -10,7 +10,7 @@ The world is an endless ocean dotted with islands. Each island has its own feel,
 
 ## Running the Prototype
 
-The current prototype is built with [Three.js](https://threejs.org/) and [Vite](https://vite.dev/).
+The current prototype is built with [Three.js](https://threejs.org/), [TypeScript](https://www.typescriptlang.org/), and [Vite](https://vite.dev/).
 
 ```bash
 npm install
@@ -32,16 +32,16 @@ Open the URL Vite prints, then click the screen to capture the mouse.
 
 ```
 src/
-├── main.js                        # Renderer, scene, lighting, game loop
-├── input/Input.js                 # Keyboard + mouse state
+├── main.ts                        # Renderer, scene, lighting, game loop
+├── input/Input.ts                 # Keyboard + mouse state
 ├── character/
-│   ├── CharacterModel.js          # Primitive character rig + procedural animation
-│   └── CharacterController.js     # Movement, acceleration, jumping, gravity
-├── camera/ThirdPersonCamera.js    # Orbit/follow camera
+│   ├── CharacterModel.ts          # Primitive character rig + procedural animation
+│   └── CharacterController.ts     # Movement, acceleration, jumping, gravity
+├── camera/ThirdPersonCamera.ts    # Orbit/follow camera
 └── world/
-    ├── Ground.js                  # Infinite ground (plane that snaps to the player)
-    ├── Sky.js                     # Gradient sky dome
-    └── Props.js                   # Seeded, chunk-streamed landmarks
+    ├── Ground.ts                  # Infinite ground (plane that snaps to the player)
+    ├── Sky.ts                     # Gradient sky dome
+    └── Props.ts                   # Seeded, chunk-streamed landmarks
 ```
 
 ---

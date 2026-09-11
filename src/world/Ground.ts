@@ -9,7 +9,9 @@ const SIZE = 800; // plane size; fog hides the edge
  * fixed in the world.
  */
 export class Ground {
-  constructor(renderer) {
+  readonly mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>;
+
+  constructor(renderer: THREE.WebGLRenderer) {
     const texture = new THREE.CanvasTexture(drawGridTile());
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(SIZE / CELL, SIZE / CELL);
@@ -19,24 +21,22 @@ export class Ground {
     const geometry = new THREE.PlaneGeometry(SIZE, SIZE);
     geometry.rotateX(-Math.PI / 2);
 
-    this.mesh = new THREE.Mesh(
-      geometry,
-      new THREE.MeshStandardMaterial({ map: texture, roughness: 0.95 }),
-    );
+    this.mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ map: texture, roughness: 0.95 }));
     this.mesh.receiveShadow = true;
   }
 
-  update(playerPosition) {
+  update(playerPosition: THREE.Vector3): void {
     this.mesh.position.x = Math.round(playerPosition.x / CELL) * CELL;
     this.mesh.position.z = Math.round(playerPosition.z / CELL) * CELL;
   }
 }
 
-function drawGridTile() {
+function drawGridTile(): HTMLCanvasElement {
   const px = 1024;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = px;
   const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('2D canvas not supported');
 
   ctx.fillStyle = '#8fbf7a';
   ctx.fillRect(0, 0, px, px);

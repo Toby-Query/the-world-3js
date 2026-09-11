@@ -1,9 +1,20 @@
 import * as THREE from 'three';
-import { clamp, damp, lerp } from '../utils/math.js';
+import { clamp, damp, lerp } from '../utils/math';
 
 const HIP_HEIGHT = 0.91;
 
-const DEFAULT_COLORS = {
+export interface CharacterColors {
+  skin: THREE.ColorRepresentation;
+  hair: THREE.ColorRepresentation;
+  shirt: THREE.ColorRepresentation;
+  pants: THREE.ColorRepresentation;
+  boots: THREE.ColorRepresentation;
+  accent: THREE.ColorRepresentation;
+  eyes: THREE.ColorRepresentation;
+  core: THREE.ColorRepresentation;
+}
+
+const DEFAULT_COLORS: CharacterColors = {
   skin: '#e8b48f',
   hair: '#2b1d14',
   shirt: '#3f7fd9',
@@ -14,6 +25,34 @@ const DEFAULT_COLORS = {
   core: '#5ff3ff',
 };
 
+/** What the controller tells the model each frame so it can pick a pose. */
+export interface AnimationState {
+  speed: number;
+  runSpeed: number;
+  onGround: boolean;
+  verticalVelocity: number;
+}
+
+/** +1 for the +X side of the body, -1 for the -X side. */
+type Side = 1 | -1;
+
+interface ArmJoints {
+  side: Side;
+  shoulder: THREE.Group;
+  elbow: THREE.Group;
+}
+
+interface LegJoints {
+  side: Side;
+  hip: THREE.Group;
+  knee: THREE.Group;
+  ankle: THREE.Group;
+}
+
+type Vec3Tuple = [x: number, y: number, z: number];
+
+const SIDES: readonly Side[] = [1, -1];
+
 /**
  * Prototype character built from primitives, arranged as a joint hierarchy
  * (hips → spine → head/shoulders, hips → legs) so it can be animated
@@ -23,9 +62,25 @@ const DEFAULT_COLORS = {
  * can later be swapped for a real model without changing the controller.
  */
 export class CharacterModel {
-  constructor(colors = {}) {
+  /** World position + facing. */
+  readonly root = new THREE.Group();
+  /** Squash & stretch. */
+  readonly body = new THREE.Group();
+  readonly hips: THREE.Group;
+  readonly spine: THREE.Group;
+  readonly head: THREE.Group;
+  readonly arms: ArmJoints[];
+  readonly legs: LegJoints[];
+  readonly materials: Record<keyof CharacterColors, THREE.MeshStandardMaterial>;
+
+  private phase = 0;
+  private time = 0;
+  private airBlend = 0;
+  private squash = 0;
+
+  constructor(colors: Partial<CharacterColors> = {}) {
     const c = { ...DEFAULT_COLORS, ...colors };
-    const mat = (color, extra = {}) =>
+    const mat = (color: THREE.ColorRepresentation, extra: THREE.MeshStandardMaterialParameters = {}) =>
       new THREE.MeshStandardMaterial({ color, roughness: 0.65, metalness: 0.05, ...extra });
 
     this.materials = {
@@ -40,8 +95,6 @@ export class CharacterModel {
     };
     const m = this.materials;
 
-    this.root = new THREE.Group(); // world position + facing
-    this.body = new THREE.Group(); // squash & stretch
     this.root.add(this.body);
 
     // --- Hips & torso ---
@@ -52,11 +105,7 @@ export class CharacterModel {
     part(new THREE.BoxGeometry(0.44, 0.06, 0.3), m.accent, this.hips, [0, 0.1, 0]);
 
     this.spine = pivot(this.hips, 0, 0.05, 0);
-    part(new THREE.CapsuleGeometry(0.2, 0.3, 6, 16), m.shirt, this.spine, [0, 0.28, 0]).scale.set(
-      1.1,
-      1,
-      0.78,
-    );
+    part(new THREE.CapsuleGeometry(0.2, 0.3, 6, 16), m.shirt, this.spine, [0, 0.28, 0]).scale.set(1.1, 1, 0.78);
     // Glowing chest core, a nod to the futuristic side of the world.
     part(new THREE.CircleGeometry(0.05, 20), m.core, this.spine, [0, 0.36, 0.162]);
 
@@ -74,8 +123,8 @@ export class CharacterModel {
       part(new THREE.SphereGeometry(0.03, 12, 8), m.eyes, this.head, [x, 0.21, 0.17]).scale.y = 1.5;
     }
 
-    // --- Arms & legs (index 0 = +X side, 1 = -X side) ---
-    this.arms = [1, -1].map((side) => {
+    // --- Arms & legs ---
+    this.arms = SIDES.map((side) => {
       const shoulder = pivot(this.spine, side * 0.29, 0.5, 0);
       part(new THREE.CapsuleGeometry(0.068, 0.2, 4, 10), m.shirt, shoulder, [0, -0.16, 0]);
       const elbow = pivot(shoulder, 0, -0.32, 0);
@@ -84,7 +133,7 @@ export class CharacterModel {
       return { side, shoulder, elbow };
     });
 
-    this.legs = [1, -1].map((side) => {
+    this.legs = SIDES.map((side) => {
       const hip = pivot(this.hips, side * 0.1, -0.04, 0);
       part(new THREE.CapsuleGeometry(0.09, 0.24, 4, 10), m.pants, hip, [0, -0.2, 0]);
       const knee = pivot(hip, 0, -0.4, 0);
@@ -93,27 +142,17 @@ export class CharacterModel {
       part(new THREE.BoxGeometry(0.15, 0.09, 0.27), m.boots, ankle, [0, -0.045, 0.05]);
       return { side, hip, knee, ankle };
     });
-
-    // Animation state
-    this.phase = 0;
-    this.time = 0;
-    this.airBlend = 0;
-    this.squash = 0;
   }
 
-  onJump() {
+  onJump(): void {
     this.squash = -0.12; // stretch
   }
 
-  onLand(impactSpeed) {
+  onLand(impactSpeed: number): void {
     this.squash = clamp(impactSpeed * 0.018, 0.05, 0.28);
   }
 
-  /**
-   * @param {number} dt
-   * @param {{ speed: number, runSpeed: number, onGround: boolean, verticalVelocity: number }} state
-   */
-  animate(dt, { speed, runSpeed, onGround, verticalVelocity }) {
+  animate(dt: number, { speed, runSpeed, onGround, verticalVelocity }: AnimationState): void {
     this.time += dt;
     const move = clamp(speed / runSpeed, 0, 1); // 0 = idle, 0.5 ≈ walk, 1 = full run
 
@@ -172,14 +211,19 @@ export class CharacterModel {
   }
 }
 
-function pivot(parent, x, y, z) {
+function pivot(parent: THREE.Object3D, x: number, y: number, z: number): THREE.Group {
   const g = new THREE.Group();
   g.position.set(x, y, z);
   parent.add(g);
   return g;
 }
 
-function part(geometry, material, parent, position) {
+function part(
+  geometry: THREE.BufferGeometry,
+  material: THREE.Material,
+  parent: THREE.Object3D,
+  position?: Vec3Tuple,
+): THREE.Mesh {
   const mesh = new THREE.Mesh(geometry, material);
   mesh.castShadow = true;
   mesh.receiveShadow = true;

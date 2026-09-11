@@ -1,8 +1,16 @@
 import * as THREE from 'three';
 
+export interface SkyOptions {
+  top?: THREE.ColorRepresentation;
+  horizon?: THREE.ColorRepresentation;
+}
+
 /** Gradient sky dome that follows the camera. */
 export class Sky {
-  constructor({ top = '#4f9de0', horizon = '#cfe6f5' } = {}) {
+  readonly horizonColor: THREE.Color;
+  readonly mesh: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
+
+  constructor({ top = '#4f9de0', horizon = '#cfe6f5' }: SkyOptions = {}) {
     this.horizonColor = new THREE.Color(horizon);
     this.mesh = new THREE.Mesh(
       new THREE.SphereGeometry(500, 32, 16),
@@ -37,7 +45,7 @@ export class Sky {
     this.mesh.frustumCulled = false;
   }
 
-  update(cameraPosition) {
+  update(cameraPosition: THREE.Vector3): void {
     this.mesh.position.copy(cameraPosition);
   }
 }

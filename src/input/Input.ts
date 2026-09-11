@@ -1,16 +1,22 @@
 /**
  * Keyboard + mouse state. Call endFrame() once per frame after everything
  * has read input, so per-frame deltas and "pressed this frame" reset.
+ *
+ * Keys are identified by `KeyboardEvent.code` (e.g. 'KeyW', 'Space',
+ * 'ShiftLeft'), which is layout-independent.
  */
 export class Input {
-  constructor(element) {
+  readonly element: HTMLElement;
+  mouseDX = 0;
+  mouseDY = 0;
+  wheel = 0;
+  pointerLocked = false;
+
+  private readonly keys = new Set<string>();
+  private readonly pressed = new Set<string>();
+
+  constructor(element: HTMLElement) {
     this.element = element;
-    this.keys = new Set();
-    this.pressed = new Set();
-    this.mouseDX = 0;
-    this.mouseDY = 0;
-    this.wheel = 0;
-    this.pointerLocked = false;
 
     window.addEventListener('keydown', (e) => {
       if (!e.repeat) this.pressed.add(e.code);
@@ -39,19 +45,21 @@ export class Input {
     );
   }
 
-  lockPointer() {
+  lockPointer(): void {
     Promise.resolve(this.element.requestPointerLock?.()).catch(() => {});
   }
 
-  isDown(...codes) {
+  /** True if any of the given keys is currently held. */
+  isDown(...codes: string[]): boolean {
     return codes.some((c) => this.keys.has(c));
   }
 
-  wasPressed(code) {
+  /** True only on the frame the key went down. */
+  wasPressed(code: string): boolean {
     return this.pressed.has(code);
   }
 
-  endFrame() {
+  endFrame(): void {
     this.pressed.clear();
     this.mouseDX = 0;
     this.mouseDY = 0;

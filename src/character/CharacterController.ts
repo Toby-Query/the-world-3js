@@ -1,5 +1,7 @@
 import * as THREE from 'three';
-import { dampAngle } from '../utils/math.js';
+import type { Input } from '../input/Input';
+import type { CharacterModel } from './CharacterModel';
+import { dampAngle } from '../utils/math';
 
 const _wish = new THREE.Vector3();
 const _delta = new THREE.Vector3();
@@ -10,38 +12,41 @@ const _delta = new THREE.Vector3();
  * the ground is simply y = 0.
  */
 export class CharacterController {
-  constructor(model, input) {
+  readonly model: CharacterModel;
+  readonly input: Input;
+
+  readonly position = new THREE.Vector3();
+  readonly velocity = new THREE.Vector3();
+  facing = Math.PI; // start facing away from the camera (-Z)
+  onGround = true;
+
+  // Tuning
+  walkSpeed = 4.5;
+  runSpeed = 9;
+  groundAccel = 45;
+  groundDecel = 30;
+  airAccel = 12;
+  turnSpeed = 14;
+  jumpSpeed = 8.5;
+  gravity = 25;
+  fallMultiplier = 1.4; // fall faster than you rise, feels snappier
+  lowJumpMultiplier = 2.2; // release Space early for a short hop
+  coyoteTime = 0.12; // can still jump just after leaving the ground
+  jumpBufferTime = 0.12; // Space pressed just before landing still counts
+
+  private coyote = 0;
+  private jumpBuffer = 0;
+
+  constructor(model: CharacterModel, input: Input) {
     this.model = model;
     this.input = input;
-
-    this.position = new THREE.Vector3();
-    this.velocity = new THREE.Vector3();
-    this.facing = Math.PI; // start facing away from the camera (-Z)
-    this.onGround = true;
-
-    // Tuning
-    this.walkSpeed = 4.5;
-    this.runSpeed = 9;
-    this.groundAccel = 45;
-    this.groundDecel = 30;
-    this.airAccel = 12;
-    this.turnSpeed = 14;
-    this.jumpSpeed = 8.5;
-    this.gravity = 25;
-    this.fallMultiplier = 1.4; // fall faster than you rise, feels snappier
-    this.lowJumpMultiplier = 2.2; // release Space early for a short hop
-    this.coyoteTime = 0.12; // can still jump just after leaving the ground
-    this.jumpBufferTime = 0.12; // Space pressed just before landing still counts
-
-    this._coyote = 0;
-    this._jumpBuffer = 0;
   }
 
-  get horizontalSpeed() {
+  get horizontalSpeed(): number {
     return Math.hypot(this.velocity.x, this.velocity.z);
   }
 
-  update(dt, cameraYaw) {
+  update(dt: number, cameraYaw: number): void {
     const input = this.input;
 
     // --- Desired direction, relative to where the camera looks ---
@@ -66,13 +71,13 @@ export class CharacterController {
     this.velocity.z += _delta.z;
 
     // --- Jump ---
-    this._jumpBuffer = input.wasPressed('Space') ? this.jumpBufferTime : Math.max(0, this._jumpBuffer - dt);
-    this._coyote = this.onGround ? this.coyoteTime : Math.max(0, this._coyote - dt);
-    if (this._jumpBuffer > 0 && this._coyote > 0) {
+    this.jumpBuffer = input.wasPressed('Space') ? this.jumpBufferTime : Math.max(0, this.jumpBuffer - dt);
+    this.coyote = this.onGround ? this.coyoteTime : Math.max(0, this.coyote - dt);
+    if (this.jumpBuffer > 0 && this.coyote > 0) {
       this.velocity.y = this.jumpSpeed;
       this.onGround = false;
-      this._jumpBuffer = 0;
-      this._coyote = 0;
+      this.jumpBuffer = 0;
+      this.coyote = 0;
       this.model.onJump();
     }
 

@@ -1,12 +1,18 @@
 import * as THREE from 'three';
-import { Input } from './input/Input.js';
-import { CharacterModel } from './character/CharacterModel.js';
-import { CharacterController } from './character/CharacterController.js';
-import { ThirdPersonCamera } from './camera/ThirdPersonCamera.js';
-import { Ground } from './world/Ground.js';
-import { Sky } from './world/Sky.js';
-import { Props } from './world/Props.js';
-import { clamp } from './utils/math.js';
+import { Input } from './input/Input';
+import { CharacterModel } from './character/CharacterModel';
+import { CharacterController } from './character/CharacterController';
+import { ThirdPersonCamera } from './camera/ThirdPersonCamera';
+import { Ground } from './world/Ground';
+import { Sky } from './world/Sky';
+import { Props } from './world/Props';
+import { clamp } from './utils/math';
+
+function getElement(id: string): HTMLElement {
+  const el = document.getElementById(id);
+  if (!el) throw new Error(`Missing #${id} in index.html`);
+  return el;
+}
 
 // --- Renderer ---
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -15,7 +21,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-document.getElementById('app').appendChild(renderer.domElement);
+getElement('app').appendChild(renderer.domElement);
 
 // --- Scene ---
 const scene = new THREE.Scene();
@@ -54,8 +60,8 @@ const controller = new CharacterController(character, input);
 const cameraRig = new ThirdPersonCamera(camera, input);
 
 // --- UI ---
-const startOverlay = document.getElementById('start');
-const statsEl = document.getElementById('stats');
+const startOverlay = getElement('start');
+const statsEl = getElement('stats');
 startOverlay.addEventListener('click', () => input.lockPointer());
 renderer.domElement.addEventListener('click', () => input.lockPointer());
 document.addEventListener('pointerlockchange', () => {
