@@ -1,0 +1,80 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #cfe6f5;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #fff;
+}
+
+#app canvas {
+  display: block;
+}
+
+#hud {
+  position: fixed;
+  inset: 16px;
+  pointer-events: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.panel {
+  background: rgba(15, 25, 40, 0.55);
+  backdrop-filter: blur(6px);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+#stats {
+  font-family: ui-monospace, Menlo, monospace;
+  white-space: pre;
+  line-height: 1.5;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 0 5px;
+  margin-right: 3px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.18);
+  font: inherit;
+  font-size: 12px;
+  text-align: center;
+}
+
+#start {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 20, 35, 0.35);
+  cursor: pointer;
+}
+
+#start[hidden] {
+  display: none;
+}
+
+.start-card {
+  text-align: center;
+  pointer-events: none;
+}
+
+.start-card h1 {
+  margin: 0;
+  font-size: 56px;
+  letter-spacing: 0.08em;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+.start-card p {
+  margin: 8px 0 0;
+  font-size: 18px;
+  opacity: 0.85;
+}

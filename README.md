@@ -8,6 +8,44 @@ The world is an endless ocean dotted with islands. Each island has its own feel,
 
 ---
 
+## Running the Prototype
+
+The current prototype is built with [Three.js](https://threejs.org/) and [Vite](https://vite.dev/).
+
+```bash
+npm install
+npm run dev
+```
+
+Open the URL Vite prints, then click the screen to capture the mouse.
+
+| Input | Action |
+|---|---|
+| `W` `A` `S` `D` / arrow keys | Move (relative to the camera) |
+| `Shift` | Run |
+| `Space` | Jump (hold for higher, tap for a short hop) |
+| Mouse | Look around |
+| Scroll | Zoom in / out |
+| `Esc` | Release the mouse |
+
+**What's in it so far:** an infinite flat world, a prototype character built from primitives with procedural walk, run, jump, and landing animations, and a third-person camera.
+
+```
+src/
+├── main.js                        # Renderer, scene, lighting, game loop
+├── input/Input.js                 # Keyboard + mouse state
+├── character/
+│   ├── CharacterModel.js          # Primitive character rig + procedural animation
+│   └── CharacterController.js     # Movement, acceleration, jumping, gravity
+├── camera/ThirdPersonCamera.js    # Orbit/follow camera
+└── world/
+    ├── Ground.js                  # Infinite ground (plane that snaps to the player)
+    ├── Sky.js                     # Gradient sky dome
+    └── Props.js                   # Seeded, chunk-streamed landmarks
+```
+
+---
+
 ## Table of Contents
 
 - [Vision](#vision)
