@@ -1,7 +1,13 @@
 import * as THREE from 'three';
 import { clamp, damp, lerp } from '../utils/math';
+import { PoseFrame, SIDES, type Pose, type PoseContext } from './animation/Pose';
+import { airPose, groundPose } from './animation/basePoses';
 
 const HIP_HEIGHT = 0.91;
+/** Speed (m/s) at which the full run cycle plays. */
+const FULL_RUN_SPEED = 9;
+/** Pose weights below this are skipped, and removed poses are dropped. */
+const MIN_WEIGHT = 1e-4;
 
 export interface CharacterColors {
   skin: THREE.ColorRepresentation;
@@ -25,33 +31,35 @@ const DEFAULT_COLORS: CharacterColors = {
   core: '#5ff3ff',
 };
 
-/** What the controller tells the model each frame so it can pick a pose. */
+/** What the character tells the model each frame. */
 export interface AnimationState {
+  /** Pose to blend toward. Unknown names fall back to 'ground'. */
+  pose: string;
   speed: number;
-  runSpeed: number;
-  onGround: boolean;
   verticalVelocity: number;
 }
 
-/** +1 for the +X side of the body, -1 for the -X side. */
-type Side = 1 | -1;
-
 interface ArmJoints {
-  side: Side;
   shoulder: THREE.Group;
   elbow: THREE.Group;
 }
 
 interface LegJoints {
-  side: Side;
   hip: THREE.Group;
   knee: THREE.Group;
   ankle: THREE.Group;
 }
 
-type Vec3Tuple = [x: number, y: number, z: number];
+interface PoseLayer {
+  pose: Pose;
+  /** How quickly the model blends into this pose. */
+  blendRate: number;
+  weight: number;
+  /** Removed, but kept until it has faded out so nothing snaps. */
+  retiring: boolean;
+}
 
-const SIDES: readonly Side[] = [1, -1];
+type Vec3Tuple = [x: number, y: number, z: number];
 
 /**
  * Prototype character built from primitives, arranged as a joint hierarchy
@@ -60,6 +68,9 @@ const SIDES: readonly Side[] = [1, -1];
  *
  * The joints are named and grouped the way a skinned rig would be, so this
  * can later be swapped for a real model without changing the controller.
+ *
+ * Animation blends between named poses. 'ground' and 'air' are built in;
+ * abilities can add more (e.g. 'fly') with addPose().
  */
 export class CharacterModel {
   /** World position + facing. */
@@ -75,8 +86,21 @@ export class CharacterModel {
 
   private phase = 0;
   private time = 0;
-  private airBlend = 0;
   private squash = 0;
+
+  private readonly poses = new Map<string, PoseLayer>();
+  private readonly basePose: PoseLayer = { pose: groundPose, blendRate: 20, weight: 1, retiring: false };
+  private readonly blended = new PoseFrame();
+  private readonly scratch = new PoseFrame();
+  private readonly ctx: PoseContext = {
+    time: 0,
+    speed: 0,
+    verticalVelocity: 0,
+    move: 0,
+    strideSin: 0,
+    strideCos: 1,
+    breathe: 0,
+  };
 
   constructor(colors: Partial<CharacterColors> = {}) {
     const c = { ...DEFAULT_COLORS, ...colors };
@@ -130,7 +154,7 @@ export class CharacterModel {
       const elbow = pivot(shoulder, 0, -0.32, 0);
       part(new THREE.CapsuleGeometry(0.056, 0.18, 4, 10), m.skin, elbow, [0, -0.14, 0]);
       part(new THREE.SphereGeometry(0.07, 12, 10), m.skin, elbow, [0, -0.3, 0]);
-      return { side, shoulder, elbow };
+      return { shoulder, elbow };
     });
 
     this.legs = SIDES.map((side) => {
@@ -140,8 +164,24 @@ export class CharacterModel {
       part(new THREE.CapsuleGeometry(0.078, 0.22, 4, 10), m.boots, knee, [0, -0.19, 0]);
       const ankle = pivot(knee, 0, -0.38, 0);
       part(new THREE.BoxGeometry(0.15, 0.09, 0.27), m.boots, ankle, [0, -0.045, 0.05]);
-      return { side, hip, knee, ankle };
+      return { hip, knee, ankle };
     });
+
+    this.poses.set('ground', this.basePose);
+    this.addPose('air', airPose, 8);
+  }
+
+  /** Register (or replace) a pose. It fades in when `animate` is asked for it by name. */
+  addPose(name: string, pose: Pose, blendRate: number): void {
+    const existing = this.poses.get(name);
+    if (existing === this.basePose) throw new Error(`Can't replace the base pose "${name}"`);
+    this.poses.set(name, { pose, blendRate, weight: existing?.weight ?? 0, retiring: false });
+  }
+
+  /** Remove a pose. It fades out rather than snapping. */
+  removePose(name: string): void {
+    const layer = this.poses.get(name);
+    if (layer && layer !== this.basePose) layer.retiring = true;
   }
 
   onJump(): void {
@@ -152,62 +192,73 @@ export class CharacterModel {
     this.squash = clamp(impactSpeed * 0.018, 0.05, 0.28);
   }
 
-  animate(dt: number, { speed, runSpeed, onGround, verticalVelocity }: AnimationState): void {
+  animate(dt: number, { pose, speed, verticalVelocity }: AnimationState): void {
     this.time += dt;
-    const move = clamp(speed / runSpeed, 0, 1); // 0 = idle, 0.5 ≈ walk, 1 = full run
+    const move = clamp(speed / FULL_RUN_SPEED, 0, 1);
 
     // Advance the stride by distance travelled, so feet don't slide.
     const strideLength = lerp(2.2, 3.6, move);
     this.phase += (speed / strideLength) * Math.PI * 2 * dt;
-    const s = Math.sin(this.phase);
-    const c = Math.cos(this.phase);
 
-    this.airBlend = damp(this.airBlend, onGround ? 0 : 1, onGround ? 20 : 8, dt);
-    const air = this.airBlend;
-    const falling = clamp(-verticalVelocity / 10, 0, 1);
+    const ctx = this.ctx;
+    ctx.time = this.time;
+    ctx.speed = speed;
+    ctx.verticalVelocity = verticalVelocity;
+    ctx.move = move;
+    ctx.strideSin = Math.sin(this.phase);
+    ctx.strideCos = Math.cos(this.phase);
+    ctx.breathe = Math.sin(this.time * 2.2) * (1 - move);
 
-    const legAmp = lerp(0, 0.95, move);
-    const kneeAmp = lerp(0, 1.4, move);
-    const armAmp = lerp(0, 1.0, move);
-    const breathe = Math.sin(this.time * 2.2) * (1 - move);
-
-    // Legs
-    for (const { side, hip, knee, ankle } of this.legs) {
-      const groundHip = -side * s * legAmp;
-      const groundKnee = Math.max(0, side * c) * kneeAmp + 0.05 * move;
-      // Tuck one leg forward, trail the other.
-      const airHip = side > 0 ? -0.9 : 0.25;
-      const airKnee = side > 0 ? 1.3 : 0.5;
-
-      hip.rotation.x = lerp(groundHip, airHip, air);
-      knee.rotation.x = lerp(groundKnee, airKnee, air);
-      ankle.rotation.x = -(hip.rotation.x + knee.rotation.x) * 0.6;
-    }
-
-    // Arms swing opposite to the legs.
-    for (const { side, shoulder, elbow } of this.arms) {
-      const groundSwing = side * s * armAmp + breathe * 0.03;
-      const groundOut = side * (0.1 + breathe * 0.02);
-      const airSwing = -0.4;
-      const airOut = side * (0.5 + 0.7 * falling);
-
-      shoulder.rotation.x = lerp(groundSwing, airSwing, air);
-      shoulder.rotation.z = lerp(groundOut, airOut, air);
-      elbow.rotation.x = lerp(-(0.15 + 0.95 * move), -0.5, air);
-    }
-
-    // Torso: lean into the run, counter-twist shoulders against hips, bob.
-    const lean = 0.28 * move * move;
-    this.spine.rotation.x = lerp(lean + breathe * 0.02, 0.1, air);
-    this.spine.rotation.y = s * 0.18 * move * (1 - air);
-    this.hips.rotation.y = -s * 0.1 * move * (1 - air);
-    this.hips.position.y = HIP_HEIGHT + (Math.abs(c) - 1) * 0.07 * move * (1 - air);
-    this.head.rotation.x = -this.spine.rotation.x * 0.6;
+    this.applyPose(this.blendPoses(dt, pose, ctx));
 
     // Squash & stretch, springing back to neutral.
     this.squash = damp(this.squash, 0, 9, dt);
     const sq = this.squash;
     this.body.scale.set(1 + sq * 0.6, 1 - sq, 1 + sq * 0.6);
+  }
+
+  /** Fade every pose's weight toward the requested one and mix them. */
+  private blendPoses(dt: number, name: string, ctx: PoseContext): PoseFrame {
+    const requested = this.poses.get(name);
+    const active = requested && !requested.retiring ? requested : this.basePose;
+
+    let total = 0;
+    for (const [key, layer] of this.poses) {
+      layer.weight = damp(layer.weight, layer === active ? 1 : 0, active.blendRate, dt);
+      if (layer.retiring && layer.weight < MIN_WEIGHT) this.poses.delete(key);
+      else total += layer.weight;
+    }
+
+    const out = this.blended.reset();
+    for (const layer of this.poses.values()) {
+      if (layer.weight < MIN_WEIGHT) continue;
+      layer.pose(this.scratch.reset(), ctx);
+      out.addWeighted(this.scratch, layer.weight / total);
+    }
+    return out;
+  }
+
+  private applyPose(f: PoseFrame): void {
+    this.legs.forEach(({ hip, knee, ankle }, i) => {
+      hip.rotation.x = f.hip[i];
+      knee.rotation.x = f.knee[i];
+      ankle.rotation.x = -(f.hip[i] + f.knee[i]) * 0.6; // keep the foot roughly level
+    });
+    this.arms.forEach(({ shoulder, elbow }, i) => {
+      shoulder.rotation.x = f.shoulderX[i];
+      shoulder.rotation.z = f.shoulderZ[i];
+      elbow.rotation.x = f.elbow[i];
+    });
+
+    this.spine.rotation.x = f.spineX;
+    this.spine.rotation.y = f.spineY;
+    this.hips.rotation.y = f.hipsY;
+    this.hips.position.y = HIP_HEIGHT + f.hipsBob;
+    this.head.rotation.x = -f.spineX * 0.6 + f.headX;
+
+    // Pitch the whole body around the hips rather than the feet.
+    this.body.rotation.x = f.bodyPitch;
+    this.body.position.set(0, HIP_HEIGHT * (1 - Math.cos(f.bodyPitch)), -HIP_HEIGHT * Math.sin(f.bodyPitch));
   }
 }
 

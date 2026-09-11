@@ -1,8 +1,13 @@
 import * as THREE from 'three';
 import { Input } from './input/Input';
+import { readKeyboardIntent } from './input/KeyboardIntent';
 import { CharacterModel } from './character/CharacterModel';
-import { CharacterController } from './character/CharacterController';
+import { Character } from './character/Character';
+import { Run } from './character/abilities/Run';
+import { Jump } from './character/abilities/Jump';
+import { Flight } from './character/abilities/Flight';
 import { ThirdPersonCamera } from './camera/ThirdPersonCamera';
+import { AbilityPanel } from './ui/AbilityPanel';
 import { Ground } from './world/Ground';
 import { Sky } from './world/Sky';
 import { Props } from './world/Props';
@@ -54,14 +59,17 @@ scene.add(ground.mesh, props.group);
 
 // --- Player ---
 const input = new Input(renderer.domElement);
-const character = new CharacterModel();
-scene.add(character.root);
-const controller = new CharacterController(character, input);
+const model = new CharacterModel();
+scene.add(model.root);
+const character = new Character(model);
+const abilities = [new Run(), new Jump(), new Flight()];
+for (const ability of abilities) character.grant(ability);
 const cameraRig = new ThirdPersonCamera(camera, input);
 
 // --- UI ---
 const startOverlay = getElement('start');
 const statsEl = getElement('stats');
+const abilityPanel = new AbilityPanel(getElement('abilities'), character, abilities);
 startOverlay.addEventListener('click', () => input.lockPointer());
 renderer.domElement.addEventListener('click', () => input.lockPointer());
 document.addEventListener('pointerlockchange', () => {
@@ -88,10 +96,12 @@ renderer.setAnimationLoop((timestamp) => {
   const dt = clamp(timer.getDelta(), 0, 0.05);
 
   cameraRig.handleInput();
-  controller.update(dt, cameraRig.yaw);
-  cameraRig.update(dt, controller.position);
+  abilityPanel.handleInput(input);
+  readKeyboardIntent(input, cameraRig.yaw, character.intent);
+  character.update(dt);
+  cameraRig.update(dt, character.position);
 
-  const p = controller.position;
+  const p = character.position;
   ground.update(p);
   props.update(p);
   sky.update(camera.position);
@@ -107,10 +117,11 @@ renderer.setAnimationLoop((timestamp) => {
     fps = Math.round(fpsFrames / fpsTime);
     fpsFrames = 0;
     fpsTime = 0;
+    const speed = character.horizontalSpeed;
     statsEl.textContent =
       `FPS   ${fps}\n` +
       `Pos   ${p.x.toFixed(1)}, ${p.y.toFixed(1)}, ${p.z.toFixed(1)}\n` +
-      `Speed ${controller.horizontalSpeed.toFixed(1)} m/s\n` +
-      `State ${controller.onGround ? (controller.horizontalSpeed > 0.2 ? 'moving' : 'idle') : 'airborne'}`;
+      `Speed ${speed.toFixed(1)} m/s\n` +
+      `Mode  ${character.mode.name}${speed > 0.2 ? ' · moving' : ''}`;
   }
 });

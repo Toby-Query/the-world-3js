@@ -22,27 +22,43 @@ Open the URL Vite prints, then click the screen to capture the mouse.
 | Input | Action |
 |---|---|
 | `W` `A` `S` `D` / arrow keys | Move (relative to the camera) |
-| `Shift` | Run |
+| `Shift` | Run (boost while flying) |
 | `Space` | Jump (hold for higher, tap for a short hop) |
+| `Space` again mid-air, or `F` | Take off / `F` again to stop flying |
+| `Space` / `C` | Fly up / down (fly into the ground to land) |
+| `1` `2` `3` | Toggle the Run, Jump and Flight abilities (or click them in the panel) |
 | Mouse | Look around |
 | Scroll | Zoom in / out |
 | `Esc` | Release the mouse |
 
-**What's in it so far:** an infinite flat world, a prototype character built from primitives with procedural walk, run, jump, and landing animations, and a third-person camera.
+**What's in it so far:** an infinite flat world, a prototype character built from primitives with procedural walk, run, jump, landing and flying animations, abilities that can be switched on and off, and a third-person camera.
 
 ```
 src/
 ├── main.ts                        # Renderer, scene, lighting, game loop
-├── input/Input.ts                 # Keyboard + mouse state
+├── input/
+│   ├── Input.ts                   # Keyboard + mouse state
+│   └── KeyboardIntent.ts          # Keys → Intent
 ├── character/
-│   ├── CharacterModel.ts          # Primitive character rig + procedural animation
-│   └── CharacterController.ts     # Movement, acceleration, jumping, gravity
+│   ├── Character.ts               # Body state + update loop; owns modes, transitions, abilities
+│   ├── CharacterModel.ts          # Primitive character rig + pose blending
+│   ├── Intent.ts                  # What the character wants to do (keyboard, AI or network fills it)
+│   ├── Stats.ts                   # Base values + modifiers tagged by source
+│   ├── modes/                     # Ground, Air, Fly: one active at a time, each steers velocity
+│   ├── abilities/                 # Run, Jump, Flight: add modes, transitions, stats and poses
+│   └── animation/                 # Poses the model blends between
+├── ui/AbilityPanel.ts             # Ability toggles
 ├── camera/ThirdPersonCamera.ts    # Orbit/follow camera
 └── world/
+    ├── Environment.ts             # Gravity + ground height (per zone later)
     ├── Ground.ts                  # Infinite ground (plane that snaps to the player)
     ├── Sky.ts                     # Gradient sky dome
     └── Props.ts                   # Seeded, chunk-streamed landmarks
 ```
+
+### Adding an ability
+
+An ability is a class with an `attach(character)` that adds what it needs, each tagged with the ability's id: movement modes, mode transitions, stat modifiers and poses. Revoking it removes everything with that tag. See [Flight.ts](src/character/abilities/Flight.ts) for a full example. To make it toggleable, add it to the `abilities` list in `main.ts`.
 
 ---
 
