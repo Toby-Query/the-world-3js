@@ -27,11 +27,13 @@ Open the URL Vite prints, then click the screen to capture the mouse.
 | `Space` again mid-air, or `F` | Take off / `F` again to stop flying |
 | `Space` / `C` | Fly up / down (fly into the ground to land) |
 | `1` `2` `3` | Toggle the Run, Jump and Flight abilities (or click them in the panel) |
+| Left / right mouse | Use what's in the right / left hand (a two-handed item uses both) |
+| `4` – `9` | Equip / unequip gear (or click it in the Gear panel) |
 | Mouse | Look around |
 | Scroll | Zoom in / out |
 | `Esc` | Release the mouse |
 
-**What's in it so far:** an infinite flat world, a prototype character built from primitives with procedural walk, run, jump, landing and flying animations, abilities that can be switched on and off, and a third-person camera.
+**What's in it so far:** an infinite flat world, a prototype character built from primitives with procedural walk, run, jump, landing and flying animations, abilities that can be switched on and off, equippable weapons, tools and wearables that take up body slots, and a third-person camera.
 
 ```
 src/
@@ -46,8 +48,11 @@ src/
 │   ├── Stats.ts                   # Base values + modifiers tagged by source
 │   ├── modes/                     # Ground, Air, Fly: one active at a time, each steers velocity
 │   ├── abilities/                 # Run, Jump, Flight: add modes, transitions, stats and poses
-│   └── animation/                 # Poses the model blends between
+│   ├── animation/                 # Poses, masked overlays and timed action clips
+│   ├── equipment/                 # Body slots, the Item interface, inventory + equipping
+│   └── items/                     # Mjölnir, Aegis, Ruyi Jingu Bang, Bashōsen, Talaria, Helm of Darkness
 ├── ui/AbilityPanel.ts             # Ability toggles
+├── ui/GearPanel.ts                # Inventory: equip / unequip, shows slots
 ├── camera/ThirdPersonCamera.ts    # Orbit/follow camera
 └── world/
     ├── Environment.ts             # Gravity + ground height (per zone later)
@@ -59,6 +64,12 @@ src/
 ### Adding an ability
 
 An ability is a class with an `attach(character)` that adds what it needs, each tagged with the ability's id: movement modes, mode transitions, stat modifiers and poses. Revoking it removes everything with that tag. See [Flight.ts](src/character/abilities/Flight.ts) for a full example. To make it toggleable, add it to the `abilities` list in `main.ts`.
+
+### Adding a weapon, tool or wearable
+
+An item declares which body slots it takes up with `occupies`: `['hand']` (either hand), `['hand', 'hand']` (both), `['leftHand']` (that hand only), `['foot', 'foot']`, `['head']`, and so on. A character can own any number of items, including several that need the same slot. Equipping one unequips whatever is in its way, and free slots are used first.
+
+When it is equipped, the item's `equip(slots)` returns its meshes (attached to the model's sockets), a `hold` pose layered over just the limbs it uses, and the abilities it grants. Those abilities are revoked again on unequip. An attack is an ability that plays an `ActionClip`: a keyframed overlay on some joints, so the legs keep running under a swing. See [Mjolnir.ts](src/character/items/Mjolnir.ts) for a one-handed weapon and [RuyiJinguBang.ts](src/character/items/RuyiJinguBang.ts) for a two-handed one. To make it available, `give` it to the character in `main.ts`.
 
 ---
 

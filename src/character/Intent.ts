@@ -14,8 +14,10 @@ export class Intent {
   jumpHeld = false;
   ascend = false;
   descend = false;
-  /** One-shot named actions pressed this frame, e.g. 'toggleFlight'. */
+  /** One-shot named actions pressed this frame, e.g. 'toggleFlight', 'primary'. */
   readonly actions = new Set<string>();
+  /** Named actions currently held down, e.g. 'secondary' to keep blocking. */
+  readonly held = new Set<string>();
 
   get hasMove(): boolean {
     return this.move.lengthSq() > 0;

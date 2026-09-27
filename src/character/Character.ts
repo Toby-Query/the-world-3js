@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import type { CharacterModel } from './CharacterModel';
 import type { Ability } from './abilities/Ability';
-import type { Pose } from './animation/Pose';
+import type { Pose, PoseMask } from './animation/Pose';
+import type { BodySlot } from './equipment/BodySlot';
+import { Equipment } from './equipment/Equipment';
 import type { MovementMode } from './modes/MovementMode';
 import { GroundMode } from './modes/GroundMode';
 import { AirMode } from './modes/AirMode';
@@ -29,6 +31,8 @@ export interface CharacterEvents {
   land: { impact: number };
   modeChange: { from: string; to: string };
   abilityChange: { id: string; granted: boolean };
+  inventoryChange: { itemId: string; owned: boolean };
+  equipChange: { itemId: string; equipped: boolean; slots: readonly BodySlot[] };
 }
 
 /** A rule for switching modes. Checked in the order added; the first match wins. */
@@ -51,14 +55,15 @@ interface Owned<T> {
  *   4. shared for every mode: move, collide with the ground, turn, animate
  *
  * It is driven entirely by `intent`, so the player, NPCs and remote players
- * can all use it. Modes, transitions, stat modifiers and poses are tagged
- * with a source (usually an ability id) and removed together with it.
+ * can all use it. Modes, transitions, stat modifiers, poses and overlays are
+ * tagged with a source (an ability or item id) and removed together with it.
  */
 export class Character {
   readonly model: CharacterModel;
   readonly intent = new Intent();
   readonly stats = new Stats();
   readonly events = new Emitter<CharacterEvents>();
+  readonly equipment: Equipment;
   env: Environment;
 
   readonly position = new THREE.Vector3();
@@ -70,12 +75,14 @@ export class Character {
   private readonly modes = new Map<string, Owned<MovementMode>>();
   private transitions: Owned<Transition>[] = [];
   private readonly poseSources = new Map<string, string>();
+  private readonly overlaySources = new Map<string, string>();
   private readonly abilities = new Map<string, Ability>();
 
   constructor(model: CharacterModel, env: Environment = FLAT_WORLD) {
     this.model = model;
     this.env = env;
     this.stats.setBase(BASE_STATS);
+    this.equipment = new Equipment(this);
 
     const ground = new GroundMode();
     this.current = ground;
@@ -98,6 +105,11 @@ export class Character {
 
   get heightAboveGround(): number {
     return this.position.y - this.env.groundHeightAt(this.position.x, this.position.z);
+  }
+
+  /** Unit vector the character faces, on the ground plane. */
+  forward(out: THREE.Vector3): THREE.Vector3 {
+    return out.set(Math.sin(this.facing), 0, Math.cos(this.facing));
   }
 
   // --- Abilities ---
@@ -137,7 +149,19 @@ export class Character {
     this.poseSources.set(name, source);
   }
 
-  /** Remove every mode, transition, stat modifier and pose added by `source`. */
+  /** Layer a pose over some joints (see CharacterModel.addOverlay). */
+  addOverlay(name: string, pose: Pose, mask: PoseMask, blendRate: number, source: string, priority = 0): void {
+    this.model.addOverlay(name, pose, mask, blendRate, priority);
+    this.overlaySources.set(name, source);
+  }
+
+  /** Fade an overlay out, e.g. when an attack finishes. */
+  removeOverlay(name: string): void {
+    this.model.removeOverlay(name);
+    this.overlaySources.delete(name);
+  }
+
+  /** Remove every mode, transition, stat modifier, pose and overlay added by `source`. */
   removeBySource(source: string): void {
     this.stats.removeBySource(source);
     this.transitions = this.transitions.filter((t) => t.source !== source);
@@ -145,6 +169,9 @@ export class Character {
       if (owner !== source) continue;
       this.model.removePose(name);
       this.poseSources.delete(name);
+    }
+    for (const [name, owner] of this.overlaySources) {
+      if (owner === source) this.removeOverlay(name);
     }
     for (const [name, { value, source: owner }] of this.modes) {
       if (owner !== source) continue;

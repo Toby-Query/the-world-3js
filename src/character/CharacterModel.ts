@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { clamp, damp, lerp } from '../utils/math';
-import { PoseFrame, SIDES, type Pose, type PoseContext } from './animation/Pose';
+import { part, pivot } from '../utils/mesh';
+import { PoseFrame, SIDES, type Pose, type PoseContext, type PoseMask } from './animation/Pose';
 import { airPose, groundPose } from './animation/basePoses';
+import type { BodySlot } from './equipment/BodySlot';
 
 const HIP_HEIGHT = 0.91;
 /** Speed (m/s) at which the full run cycle plays. */
@@ -42,6 +44,8 @@ export interface AnimationState {
 interface ArmJoints {
   shoulder: THREE.Group;
   elbow: THREE.Group;
+  /** Also the hand's socket. */
+  wrist: THREE.Group;
 }
 
 interface LegJoints {
@@ -59,7 +63,11 @@ interface PoseLayer {
   retiring: boolean;
 }
 
-type Vec3Tuple = [x: number, y: number, z: number];
+interface OverlayLayer extends PoseLayer {
+  name: string;
+  mask: PoseMask;
+  priority: number;
+}
 
 /**
  * Prototype character built from primitives, arranged as a joint hierarchy
@@ -70,7 +78,12 @@ type Vec3Tuple = [x: number, y: number, z: number];
  * can later be swapped for a real model without changing the controller.
  *
  * Animation blends between named poses. 'ground' and 'air' are built in;
- * abilities can add more (e.g. 'fly') with addPose().
+ * abilities can add more (e.g. 'fly') with addPose(). Overlays are layered on
+ * top of that for just some joints (addOverlay), e.g. holding a weapon in
+ * one hand or swinging it while the legs keep running.
+ *
+ * `sockets` are where equipped items attach. Hand sockets sit in the palm:
+ * with the arm hanging, their -Y runs down the arm and +Z points forward.
  */
 export class CharacterModel {
   /** World position + facing. */
@@ -82,6 +95,7 @@ export class CharacterModel {
   readonly head: THREE.Group;
   readonly arms: ArmJoints[];
   readonly legs: LegJoints[];
+  readonly sockets: Record<BodySlot, THREE.Group>;
   readonly materials: Record<keyof CharacterColors, THREE.MeshStandardMaterial>;
 
   private phase = 0;
@@ -89,6 +103,9 @@ export class CharacterModel {
   private squash = 0;
 
   private readonly poses = new Map<string, PoseLayer>();
+  private readonly overlays = new Map<string, OverlayLayer>();
+  /** `overlays`, lowest priority first. */
+  private overlayOrder: OverlayLayer[] = [];
   private readonly basePose: PoseLayer = { pose: groundPose, blendRate: 20, weight: 1, retiring: false };
   private readonly blended = new PoseFrame();
   private readonly scratch = new PoseFrame();
@@ -120,6 +137,7 @@ export class CharacterModel {
     const m = this.materials;
 
     this.root.add(this.body);
+    this.body.rotation.order = 'YXZ'; // spin (bodyYaw) around the pitched body
 
     // --- Hips & torso ---
     this.hips = pivot(this.body, 0, HIP_HEIGHT, 0);
@@ -153,8 +171,9 @@ export class CharacterModel {
       part(new THREE.CapsuleGeometry(0.068, 0.2, 4, 10), m.shirt, shoulder, [0, -0.16, 0]);
       const elbow = pivot(shoulder, 0, -0.32, 0);
       part(new THREE.CapsuleGeometry(0.056, 0.18, 4, 10), m.skin, elbow, [0, -0.14, 0]);
-      part(new THREE.SphereGeometry(0.07, 12, 10), m.skin, elbow, [0, -0.3, 0]);
-      return { shoulder, elbow };
+      const wrist = pivot(elbow, 0, -0.3, 0);
+      part(new THREE.SphereGeometry(0.07, 12, 10), m.skin, wrist);
+      return { shoulder, elbow, wrist };
     });
 
     this.legs = SIDES.map((side) => {
@@ -166,6 +185,18 @@ export class CharacterModel {
       part(new THREE.BoxGeometry(0.15, 0.09, 0.27), m.boots, ankle, [0, -0.045, 0.05]);
       return { hip, knee, ankle };
     });
+
+    // Index 0 is the +X side, which is the character's left (it faces +Z).
+    this.sockets = {
+      head: pivot(this.head, 0, 0.2, 0),
+      neck: pivot(this.spine, 0, 0.6, 0),
+      torso: pivot(this.spine, 0, 0.3, 0),
+      back: pivot(this.spine, 0, 0.32, -0.17),
+      leftHand: this.arms[0].wrist,
+      rightHand: this.arms[1].wrist,
+      leftFoot: this.legs[0].ankle,
+      rightFoot: this.legs[1].ankle,
+    };
 
     this.poses.set('ground', this.basePose);
     this.addPose('air', airPose, 8);
@@ -182,6 +213,23 @@ export class CharacterModel {
   removePose(name: string): void {
     const layer = this.poses.get(name);
     if (layer && layer !== this.basePose) layer.retiring = true;
+  }
+
+  /**
+   * Register (or replace) an overlay: a pose for just the joints in `mask`,
+   * layered over the movement pose. It fades in right away. Higher
+   * `priority` overlays are applied later, so they win on shared joints.
+   */
+  addOverlay(name: string, pose: Pose, mask: PoseMask, blendRate: number, priority = 0): void {
+    const weight = this.overlays.get(name)?.weight ?? 0;
+    this.overlays.set(name, { name, pose, mask, blendRate, priority, weight, retiring: false });
+    this.sortOverlays();
+  }
+
+  /** Remove an overlay. It fades out rather than snapping. */
+  removeOverlay(name: string): void {
+    const layer = this.overlays.get(name);
+    if (layer) layer.retiring = true;
   }
 
   onJump(): void {
@@ -209,7 +257,9 @@ export class CharacterModel {
     ctx.strideCos = Math.cos(this.phase);
     ctx.breathe = Math.sin(this.time * 2.2) * (1 - move);
 
-    this.applyPose(this.blendPoses(dt, pose, ctx));
+    const frame = this.blendPoses(dt, pose, ctx);
+    this.applyOverlays(dt, frame, ctx);
+    this.applyPose(frame);
 
     // Squash & stretch, springing back to neutral.
     this.squash = damp(this.squash, 0, 9, dt);
@@ -238,16 +288,37 @@ export class CharacterModel {
     return out;
   }
 
+  private applyOverlays(dt: number, out: PoseFrame, ctx: PoseContext): void {
+    let removed = false;
+    for (const layer of this.overlayOrder) {
+      layer.weight = damp(layer.weight, layer.retiring ? 0 : 1, layer.blendRate, dt);
+      if (layer.retiring && layer.weight < MIN_WEIGHT) {
+        this.overlays.delete(layer.name);
+        removed = true;
+        continue;
+      }
+      if (layer.weight < MIN_WEIGHT) continue;
+      layer.pose(this.scratch.reset(), ctx);
+      out.blendMasked(this.scratch, layer.weight, layer.mask);
+    }
+    if (removed) this.sortOverlays();
+  }
+
+  private sortOverlays(): void {
+    this.overlayOrder = [...this.overlays.values()].sort((a, b) => a.priority - b.priority);
+  }
+
   private applyPose(f: PoseFrame): void {
     this.legs.forEach(({ hip, knee, ankle }, i) => {
       hip.rotation.x = f.hip[i];
       knee.rotation.x = f.knee[i];
       ankle.rotation.x = -(f.hip[i] + f.knee[i]) * 0.6; // keep the foot roughly level
     });
-    this.arms.forEach(({ shoulder, elbow }, i) => {
+    this.arms.forEach(({ shoulder, elbow, wrist }, i) => {
       shoulder.rotation.x = f.shoulderX[i];
       shoulder.rotation.z = f.shoulderZ[i];
       elbow.rotation.x = f.elbow[i];
+      wrist.rotation.x = f.wrist[i];
     });
 
     this.spine.rotation.x = f.spineX;
@@ -256,29 +327,14 @@ export class CharacterModel {
     this.hips.position.y = HIP_HEIGHT + f.hipsBob;
     this.head.rotation.x = -f.spineX * 0.6 + f.headX;
 
-    // Pitch the whole body around the hips rather than the feet.
-    this.body.rotation.x = f.bodyPitch;
-    this.body.position.set(0, HIP_HEIGHT * (1 - Math.cos(f.bodyPitch)), -HIP_HEIGHT * Math.sin(f.bodyPitch));
+    // Pitch the whole body around the hips rather than the feet, then spin it
+    // about the vertical axis through them.
+    this.body.rotation.set(f.bodyPitch, f.bodyYaw, 0);
+    const forward = -HIP_HEIGHT * Math.sin(f.bodyPitch);
+    this.body.position.set(
+      forward * Math.sin(f.bodyYaw),
+      HIP_HEIGHT * (1 - Math.cos(f.bodyPitch)),
+      forward * Math.cos(f.bodyYaw),
+    );
   }
-}
-
-function pivot(parent: THREE.Object3D, x: number, y: number, z: number): THREE.Group {
-  const g = new THREE.Group();
-  g.position.set(x, y, z);
-  parent.add(g);
-  return g;
-}
-
-function part(
-  geometry: THREE.BufferGeometry,
-  material: THREE.Material,
-  parent: THREE.Object3D,
-  position?: Vec3Tuple,
-): THREE.Mesh {
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  if (position) mesh.position.set(...position);
-  parent.add(mesh);
-  return mesh;
 }

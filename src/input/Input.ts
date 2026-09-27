@@ -3,7 +3,9 @@
  * has read input, so per-frame deltas and "pressed this frame" reset.
  *
  * Keys are identified by `KeyboardEvent.code` (e.g. 'KeyW', 'Space',
- * 'ShiftLeft'), which is layout-independent.
+ * 'ShiftLeft'), which is layout-independent. Mouse buttons are 'Mouse0'
+ * (left), 'Mouse1' (middle) and 'Mouse2' (right), and only register while
+ * the pointer is locked, so the click that locks it isn't also an attack.
  */
 export class Input {
   readonly element: HTMLElement;
@@ -29,6 +31,15 @@ export class Input {
     document.addEventListener('pointerlockchange', () => {
       this.pointerLocked = document.pointerLockElement === element;
       if (!this.pointerLocked) this.keys.clear();
+    });
+    document.addEventListener('mousedown', (e) => {
+      if (!this.pointerLocked) return;
+      this.pressed.add(`Mouse${e.button}`);
+      this.keys.add(`Mouse${e.button}`);
+    });
+    window.addEventListener('mouseup', (e) => this.keys.delete(`Mouse${e.button}`));
+    window.addEventListener('contextmenu', (e) => {
+      if (this.pointerLocked) e.preventDefault();
     });
     document.addEventListener('mousemove', (e) => {
       if (!this.pointerLocked) return;

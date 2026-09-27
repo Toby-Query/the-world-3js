@@ -6,8 +6,15 @@ import { Character } from './character/Character';
 import { Run } from './character/abilities/Run';
 import { Jump } from './character/abilities/Jump';
 import { Flight } from './character/abilities/Flight';
+import { Mjolnir } from './character/items/Mjolnir';
+import { RuyiJinguBang } from './character/items/RuyiJinguBang';
+import { Aegis } from './character/items/Aegis';
+import { Bashosen } from './character/items/Bashosen';
+import { Talaria } from './character/items/Talaria';
+import { HelmOfDarkness } from './character/items/HelmOfDarkness';
 import { ThirdPersonCamera } from './camera/ThirdPersonCamera';
 import { AbilityPanel } from './ui/AbilityPanel';
+import { GearPanel } from './ui/GearPanel';
 import { Ground } from './world/Ground';
 import { Sky } from './world/Sky';
 import { Props } from './world/Props';
@@ -64,12 +71,17 @@ scene.add(model.root);
 const character = new Character(model);
 const abilities = [new Run(), new Jump(), new Flight()];
 for (const ability of abilities) character.grant(ability);
+const items = [new Mjolnir(), new Aegis(), new RuyiJinguBang(), new Bashosen(), new Talaria(), new HelmOfDarkness()];
+for (const item of items) character.equipment.give(item);
+character.equipment.equip('mjolnir');
+character.equipment.equip('aegis');
 const cameraRig = new ThirdPersonCamera(camera, input);
 
 // --- UI ---
 const startOverlay = getElement('start');
 const statsEl = getElement('stats');
 const abilityPanel = new AbilityPanel(getElement('abilities'), character, abilities);
+const gearPanel = new GearPanel(getElement('gear'), character, abilities.length + 1);
 startOverlay.addEventListener('click', () => input.lockPointer());
 renderer.domElement.addEventListener('click', () => input.lockPointer());
 document.addEventListener('pointerlockchange', () => {
@@ -97,6 +109,7 @@ renderer.setAnimationLoop((timestamp) => {
 
   cameraRig.handleInput();
   abilityPanel.handleInput(input);
+  gearPanel.handleInput(input);
   readKeyboardIntent(input, cameraRig.yaw, character.intent);
   character.update(dt);
   cameraRig.update(dt, character.position);
