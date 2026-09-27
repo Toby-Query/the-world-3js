@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 280" width="100%" height="100%">
+  <defs>
+    <linearGradient id="boneShank" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb" />
+      <stop offset="40%" stop-color="#fef3c7" />
+      <stop offset="80%" stop-color="#fde68a" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="sennitLash" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#92400e" />
+      <stop offset="100%" stop-color="#451a03" />
+    </linearGradient>
+    <radialGradient id="tropicGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#14b8a6" />
+      <stop offset="100%" stop-color="#0f766e" stop-opacity="0" />
+    </radialGradient>
+    <filter id="oceanGlow">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="700" height="280" fill="#06121e" rx="8" />
+
+  <!-- Oceanic Bio Glow -->
+  <ellipse cx="330" cy="140" rx="160" ry="90" fill="url(#tropicGlow)" opacity="0.18" filter="url(#oceanGlow)" />
+
+  <!-- The Fishhook Form (Carved Ancestral Jawbone of Muri-ranga-whenua) -->
+  <g transform="translate(180, 70)">
+    <!-- Hook Curve -->
+    <path d="M 60,10 C 60,70 70,120 120,150 C 180,180 250,160 270,110 C 280,85 270,55 250,45 C 245,42 238,48 242,55 C 255,80 240,110 200,120 C 160,130 115,110 110,60 L 110,10 Z" 
+          fill="url(#boneShank)" stroke="#b45309" stroke-width="2" />
+
+    <!-- Barbed Point Details -->
+    <polygon points="250,45 260,35 242,55" fill="#fef08a" stroke="#d97706" />
+
+    <!-- Traditional Polynesian Tatau / Carvings along Shank -->
+    <g stroke="#92400e" stroke-width="1.5" fill="none" opacity="0.75">
+      <path d="M 80,35 L 90,45 L 80,55 L 90,65 L 80,75 L 90,85" />
+      <path d="M 125,120 L 135,130 L 145,120 L 155,130 L 165,120" />
+      <circle cx="215" cy="122" r="4" fill="#92400e" />
+      <circle cx="230" cy="110" r="3.5" fill="#92400e" />
+    </g>
+
+    <!-- Coconut Sennit Fiber Lashings (Aho) at the Eyelet -->
+    <g transform="translate(50, 0)">
+      <rect x="0" y="0" width="70" height="18" rx="2" fill="url(#sennitLash)" stroke="#f59e0b" stroke-width="1" />
+      <line x1="10" y1="0" x2="10" y2="18" stroke="#f59e0b" stroke-width="1.5" />
+      <line x1="20" y1="0" x2="20" y2="18" stroke="#f59e0b" stroke-width="1.5" />
+      <line x1="30" y1="0" x2="30" y2="18" stroke="#f59e0b" stroke-width="1.5" />
+      <line x1="40" y1="0" x2="40" y2="18" stroke="#f59e0b" stroke-width="1.5" />
+      <line x1="50" y1="0" x2="50" y2="18" stroke="#f59e0b" stroke-width="1.5" />
+      <line x1="60" y1="0" x2="60" y2="18" stroke="#f59e0b" stroke-width="1.5" />
+
+      <!-- Braided Cord Leading Upwards into the Heavens -->
+      <path d="M 35,0 Q 30,-30 45,-60 Q 60,-90 35,-120" fill="none" stroke="#d97706" stroke-width="4" stroke-dasharray="6,2" />
+    </g>
+  </g>
+
+  <!-- Labels and Technical Spec -->
+  <text x="350" y="38" fill="#fef08a" font-family="'Cinzel', Georgia, serif" font-size="16" font-weight="bold" text-anchor="middle" letter-spacing="3">MANAIAKALANI (THE HEAVENLY FISHHOOK)</text>
+  <text x="350" y="60" fill="#94a3b8" font-family="sans-serif" font-size="11" text-anchor="middle">Material: Ancestral Jawbone &amp; Sennit Cordage • Tradition: Polynesian (Hawaiian / Māori) • Wielder: Māui</text>
+
+  <text x="350" y="240" fill="#2dd4bf" font-family="sans-serif" font-size="11" text-anchor="middle" font-weight="bold">KEY MECHANIC: SEABED ELEVATION &amp; LEVIATHAN TETHER</text>
+  <text x="350" y="260" fill="#64748b" font-family="sans-serif" font-size="10" text-anchor="middle">Cast into deep trenches to dredge submerged landmasses, reel in island chains, or grapple swimming behemoths</text>
+
+  <!-- Border -->
+  <rect x="8" y="8" width="684" height="264" rx="6" fill="none" stroke="#1e293b" stroke-width="1.5" />
+</svg>

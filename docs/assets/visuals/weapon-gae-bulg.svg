@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 280" width="100%" height="100%">
+  <defs>
+    <linearGradient id="monsterBone" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4c0519" />
+      <stop offset="30%" stop-color="#881337" />
+      <stop offset="70%" stop-color="#e11d48" />
+      <stop offset="100%" stop-color="#f43f5e" />
+    </linearGradient>
+    <linearGradient id="spearShaft" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#27272a" />
+      <stop offset="50%" stop-color="#3f3f46" />
+      <stop offset="100%" stop-color="#18181b" />
+    </linearGradient>
+    <radialGradient id="crimsonAura" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#e11d48" />
+      <stop offset="100%" stop-color="#881337" stop-opacity="0" />
+    </radialGradient>
+    <filter id="bloodGlow">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="700" height="280" fill="#0c0a09" rx="8" />
+
+  <!-- Crimson Relic Glow -->
+  <ellipse cx="230" cy="140" rx="140" ry="80" fill="url(#crimsonAura)" opacity="0.22" filter="url(#bloodGlow)" />
+
+  <!-- Long Ash Wood Shaft Extending to the Right -->
+  <rect x="220" y="135" width="410" height="10" rx="2" fill="url(#spearShaft)" stroke="#52525b" stroke-width="1" />
+  <!-- Grip Bindings -->
+  <rect x="420" y="132" width="60" height="16" rx="2" fill="#78350f" stroke="#b45309" stroke-width="1" />
+  <!-- Bronze Counterweight Pommel -->
+  <polygon points="630,132 645,140 630,148" fill="#d97706" />
+
+  <!-- The Deadly Head Group (Carved from the Sea Beast Coinchenn) -->
+  <g transform="translate(140, 140)">
+    <!-- Central Spear Spine -->
+    <polygon points="-80,0 90,-12 110,0 90,12" fill="url(#monsterBone)" stroke="#fda4af" stroke-width="1.5" filter="url(#bloodGlow)" />
+
+    <!-- 30 Expanding Barbs (Characteristic of the Gáe Bulg) -->
+    <!-- Top Barbs -->
+    <path d="M -40,-3 L -55,-22 L -30,-6" fill="#fb7185" stroke="#ffe4e6" stroke-width="1" />
+    <path d="M -10,-4 L -20,-30 L 5,-8" fill="#fb7185" stroke="#ffe4e6" stroke-width="1" />
+    <path d="M 20,-6 L 15,-34 L 38,-9" fill="#fb7185" stroke="#ffe4e6" stroke-width="1" />
+    <path d="M 50,-8 L 50,-30 L 68,-10" fill="#fb7185" stroke="#ffe4e6" stroke-width="1" />
+
+    <!-- Bottom Barbs -->
+    <path d="M -40,3 L -55,22 L -30,6" fill="#fb7185" stroke="#ffe4e6" stroke-width="1" />
+    <path d="M -10,4 L -20,30 L 5,8" fill="#fb7185" stroke="#ffe4e6" stroke-width="1" />
+    <path d="M 20,6 L 15,34 L 38,9" fill="#fb7185" stroke="#ffe4e6" stroke-width="1" />
+    <path d="M 50,8 L 50,30 L 68,10" fill="#fb7185" stroke="#ffe4e6" stroke-width="1" />
+
+    <!-- Needle-Sharp Tip -->
+    <polygon points="-80,0 -105,0 -80,-3" fill="#ffe4e6" />
+    <polygon points="-80,0 -105,0 -80,3" fill="#fda4af" />
+
+    <!-- Socket Collar with Celtic Ogham Runes -->
+    <rect x="85" y="-14" width="25" height="28" rx="2" fill="#713f12" stroke="#d97706" stroke-width="1.5" />
+    <line x1="92" y1="-10" x2="92" y2="10" stroke="#fef08a" stroke-width="1" />
+    <line x1="98" y1="-8" x2="103" y2="-8" stroke="#fef08a" stroke-width="1" />
+    <line x1="98" y1="2" x2="103" y2="2" stroke="#fef08a" stroke-width="1" />
+  </g>
+
+  <!-- Foot-Launch Trajectory Arc Indicator (Launched from the Toes of the Hero) -->
+  <path d="M 70,220 C 50,170 80,140 120,135" fill="none" stroke="#f43f5e" stroke-width="2" stroke-dasharray="3,3" />
+  <circle cx="70" cy="220" r="4" fill="#f43f5e" />
+  <text x="80" y="235" fill="#fda4af" font-family="sans-serif" font-size="9">Surf/Foot Launch Stance</text>
+
+  <!-- Labels and Technical Spec -->
+  <text x="350" y="38" fill="#fda4af" font-family="'Cinzel', Georgia, serif" font-size="16" font-weight="bold" text-anchor="middle" letter-spacing="3">GÁE BULG (THE BELLOWING SPEAR)</text>
+  <text x="350" y="60" fill="#94a3b8" font-family="sans-serif" font-size="11" text-anchor="middle">Material: Bones of the Marine Monster Coinchenn • Origin: Isle of Skye / Scáthach • Wielder: Cú Chulainn</text>
+
+  <text x="350" y="240" fill="#fb7185" font-family="sans-serif" font-size="11" text-anchor="middle" font-weight="bold">KEY MECHANIC: INTERNAL BARBED DETONATION</text>
+  <text x="350" y="260" fill="#64748b" font-family="sans-serif" font-size="10" text-anchor="middle">Fired from the foot between tidal surf; upon impact 30 barbs bloom within target, requiring flesh-cutting to remove</text>
+
+  <!-- Border -->
+  <rect x="8" y="8" width="684" height="264" rx="6" fill="none" stroke="#27272a" stroke-width="1.5" />
+</svg>

@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="penglaiSky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="40%" stop-color="#1e1b4b" />
+      <stop offset="70%" stop-color="#701a75" />
+      <stop offset="90%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+    <linearGradient id="seaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#042f2e" />
+      <stop offset="100%" stop-color="#021a19" />
+    </linearGradient>
+    <linearGradient id="karstGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#115e59" />
+      <stop offset="100%" stop-color="#042f2e" />
+    </linearGradient>
+    <linearGradient id="karstGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d9488" />
+      <stop offset="100%" stop-color="#134e4a" />
+    </linearGradient>
+    <linearGradient id="goldGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="100%" stop-color="#eab308" />
+    </linearGradient>
+    <filter id="softGlow">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Sky -->
+  <rect width="800" height="380" fill="url(#penglaiSky)" />
+
+  <!-- Celestial Immortals Sun / Moon -->
+  <circle cx="400" cy="180" r="70" fill="url(#goldGlow)" opacity="0.85" filter="url(#softGlow)" />
+
+  <!-- Distant Taoist Pagoda on Floating Island Chunk -->
+  <g transform="translate(480, 110)">
+    <polygon points="10,40 -20,40 -10,30 20,30" fill="#312e81" />
+    <path d="M-30,50 Q-5,42 25,50 L20,42 Q-5,36 -25,42 Z" fill="#b45309" />
+    <!-- Floating islet base -->
+    <path d="M-40,65 Q0,55 40,65 Q20,100 -5,110 Q-30,100 -40,65 Z" fill="#0f172a" />
+  </g>
+
+  <!-- Distant Karsts in Mist -->
+  <polygon points="120,380 180,160 230,380" fill="#1e1b4b" opacity="0.6" />
+  <polygon points="560,380 620,140 680,380" fill="#1e1b4b" opacity="0.6" />
+
+  <!-- Midground Karst Peaks (Guilin / Huangshan Style) -->
+  <polygon points="220,380 300,110 380,380" fill="url(#karstGrad1)" />
+  <polygon points="420,380 500,80 580,380" fill="url(#karstGrad2)" />
+
+  <!-- Cascading Waterfalls from Karst -->
+  <path d="M310,210 Q315,280 320,380" stroke="#a5f3fc" stroke-width="3" fill="none" opacity="0.8" />
+  <path d="M515,220 Q505,290 510,380" stroke="#a5f3fc" stroke-width="4" fill="none" opacity="0.8" />
+
+  <!-- Foreground Main Peak (Huaguoshan / Penglai Crown) -->
+  <polygon points="50,420 160,180 270,420" fill="#064e3b" />
+  <polygon points="130,220 160,180 190,220" fill="#047857" />
+
+  <!-- Pagoda of the Eight Immortals on Main Peak -->
+  <g transform="translate(160, 155)">
+    <path d="M-22,12 Q0,4 22,12 L18,5 Q0,0 -18,5 Z" fill="#d97706" />
+    <rect x="-10" y="12" width="20" height="14" fill="#78350f" />
+    <path d="M-28,26 Q0,16 28,26 L22,18 Q0,12 -22,18 Z" fill="#b45309" />
+    <!-- Golden finial -->
+    <circle cx="0" cy="-2" r="3" fill="#fef08a" />
+  </g>
+
+  <!-- Peach Blossoms (Pantao Orchard of Immortality) -->
+  <circle cx="110" cy="280" r="10" fill="#f472b6" opacity="0.8" />
+  <circle cx="125" cy="275" r="8" fill="#fb7185" opacity="0.8" />
+  <circle cx="210" cy="300" r="12" fill="#f472b6" opacity="0.8" />
+  <circle cx="225" cy="310" r="9" fill="#fda4af" opacity="0.8" />
+
+  <!-- Billowing Ethereal Taoist Clouds (Xiangyun) -->
+  <path d="M 50,340 Q 90,300 150,330 Q 200,290 260,330 Q 320,310 380,350 L 50,380 Z" fill="#f8fafc" opacity="0.25" />
+  <path d="M 400,320 Q 480,280 560,320 Q 640,290 720,330 L 800,370 L 400,370 Z" fill="#f8fafc" opacity="0.3" />
+
+  <!-- Sea Layer -->
+  <rect y="380" width="800" height="120" fill="url(#seaGrad)" />
+  <!-- Bioluminescent Sea Wave Highlights -->
+  <path d="M0,390 Q200,375 400,390 T800,390" stroke="#34d399" stroke-width="2" fill="none" opacity="0.5" />
+  <path d="M0,420 Q200,405 400,420 T800,420" stroke="#2dd4bf" stroke-width="1.5" fill="none" opacity="0.4" />
+  <path d="M0,460 Q200,445 400,460 T800,460" stroke="#059669" stroke-width="1" fill="none" opacity="0.3" />
+
+  <!-- Border & Caption -->
+  <rect x="10" y="10" width="780" height="480" fill="none" stroke="#10b981" stroke-width="1.5" opacity="0.6" />
+  <text x="30" y="475" fill="#a7f3d0" font-family="'Cinzel', Georgia, serif" font-size="14" letter-spacing="2">MOUNT PENGLAI &amp; HUAGUOSHAN • REALM OF IMMORTALS</text>
+</svg>

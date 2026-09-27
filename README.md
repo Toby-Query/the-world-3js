@@ -68,6 +68,7 @@ An ability is a class with an `attach(character)` that adds what it needs, each 
 - [The Big Technical Goal: 8 Billion Players, One World](#the-big-technical-goal-8-billion-players-one-world)
 - [The World Structure](#the-world-structure)
 - [Realms & Islands](#realms--islands)
+- [Mythological Documentation & Reliquary (`docs/`)](#mythological-documentation--reliquary-docs)
 - [Lore & Mystery](#lore--mystery)
 - [Gameplay Systems](#gameplay-systems)
 - [Economy](#economy)
@@ -150,6 +151,34 @@ Based on the European folklore of a ghostly group of riders crossing the sky.
 
 ### 🌌 Space
 Beyond the sky, with different physics rules.
+
+---
+
+## Mythological Documentation & Reliquary (`docs/`)
+
+The game world is grounded strictly in authentic global mythologies. Full design documents, environmental physics, lore sources, and visual blueprints are maintained in the [`docs/`](docs/README.md) directory:
+
+- 🗺️ **[Archipelago System & Navigational Currents](docs/islands/README.md)** — Ocean currents, zonal physics, and island biomes.
+  - [Huaguoshan & The Jade Peaks](docs/islands/01-penglai-huaguoshan.md) *(Chinese / Journey to the West)*
+  - [The Labyrinth of Minos](docs/islands/02-labyrinth-of-minos.md) *(Greek / Crete & Daedalus)*
+  - [The Plain of Vigrid & The World Forge](docs/islands/03-vigrid-ragnarok.md) *(Norse / Ragnarök)*
+  - [The Golden Citadel of Lanka](docs/islands/04-lanka-ramayana.md) *(Vedic / Ramayana)*
+  - [The Sacred Cedar Forest & Uruk](docs/islands/05-cedar-forest-gilgamesh.md) *(Mesopotamian / Epic of Gilgamesh)*
+  - [The Necropolis of the 12 Gates](docs/islands/06-necropolis-duat.md) *(Egyptian / Book of the Dead)*
+  - [The City of the Five Suns](docs/islands/07-five-suns-aztec.md) *(Aztec / Five Cosmic Eras)*
+  - [The Taiga of the Dancing Hut](docs/islands/08-taiga-baba-yaga.md) *(Slavic / Baba Yaga & Koschei)*
+  - [The Sky Path of the Wild Hunt](docs/islands/09-the-wild-hunt.md) *(European Folklore)*
+  - [The Concentric Rings of Atlantis](docs/islands/10-atlantis-dwarka.md) *(Platonic Greek)*
+  - [Tír na nÓg & Avalon](docs/islands/11-tir-na-nog-avalon.md) *(Celtic / Arthurian)*
+  - [Niflheim & Jötunheim](docs/islands/12-niflheim-jotunheim.md) *(Norse)*
+  - [Dilmun & Aaru](docs/islands/13-dilmun-aaru.md) *(Sumerian & Egyptian)*
+  - [Hawaiki & Onogoroshima](docs/islands/14-hawaiki-onogoroshima.md) *(Polynesian & Shinto)*
+  - [Xibalba & Diyu](docs/islands/15-xibalba-diyu.md) *(Mayan & Chinese Underworld)*
+  - [Hy-Brasil & Anthemoessa](docs/islands/16-hy-brasil-anthemoessa.md) *(Irish Folklore & Greek Siren Seas)*
+- ⚔️ **[The Reliquary: Weapons, Tools & Regalia](docs/tools-and-weapons/README.md)** — Attunement, Divine Burden, and item blueprints.
+  - [Divine Weapons](docs/tools-and-weapons/01-divine-weapons.md) *(Ruyi Jingu Bang, Mjölnir, Trishula, Gáe Bulg, Kusanagi, Xiuhcoatl, etc.)*
+  - [Sacred Tools & Implements](docs/tools-and-weapons/02-sacred-tools.md) *(Manaiakalani fishhook, Amenonuhoko spear, Skíðblaðnir folding ship, Bashōsen fan, etc.)*
+  - [Relics, Regalia & Wearables](docs/tools-and-weapons/03-relics-and-regalia.md) *(Talaria winged sandals, Aegis of Athena, Cap of Hades, Draupnir, etc.)*
 
 ---
 
